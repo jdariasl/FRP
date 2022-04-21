@@ -1,4 +1,4 @@
-function FRP = frp(x,dim,tau,cluster,T)
+function FRP = frp(x,dim,tau,cluster,T,metric)
 %------------------------------------------------------------------------
 % Reference: Pham TD (2016) Fuzzy recurrence plots, EPL 116: 50008.
 %------------------------------------------------------------------------
@@ -37,44 +37,35 @@ switch nargin
         tau=1;
         cluster=2;
         T=NaN;
+        metric = 'ppk';
     case 2
         tau=1;
         cluster=2;
         T=NaN;
+        metric = 'ppk';
     case 3
         cluster=2;
         T=NaN;
+        metric = 'ppk';
     case 4
         T=NaN;
+        metric = 'ppk';
+    case 5
+        metric = 'ppk';
 end
 
 PS = Embeb(x,dim,tau);
 
+
 [~, FR, ~] = fcm(PS, cluster); % use FCM from Matlab Toolbox
 
-cRP=zeros(length(FR),length(FR),cluster);
-
-mTemp(:,:,1) = FR;
-mTemp(:,:,2) = FR;
-
-D = pdist2(PS,PS);
-
-for i=1:length(FR)
-    mTemp(:,:,1) = FR(:,i)*ones(1,length(FR));
-    cRP(i,:,:) = min(mTemp,[],3)';
-    indx = D(i,:) == 0;
-    cRP(i,indx,:) = 1;
+if strcmp(metric,'original')
+    FRP = frp_pham(FR,PS,T);
+elseif strcmp(metric,'transi')
+    FRP = rp_transi(FR,PS,T);
+elseif strcmp(metric,'ppk')
+    FRP = rp_ppk(FR',PS,T);
 end
-
-FRP = max(cRP,[],3);
-
-if ~isnan(T)
-    FRP(FRP>=T)=1;
-    FRP(FRP<T)=0;
-end
-
-FRP = imcomplement(FRP); % Dark pixels to indicate recurrences
-
-figure
-imshow(FRP)
+%figure
+%imshow(FRP)
 end
